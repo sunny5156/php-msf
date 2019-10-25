@@ -536,6 +536,10 @@ abstract class HttpServer extends Server
     {
         if (function_exists('tideways_xhprof_enable')){
             
+            use PhpAmqpLib\Connection\AMQPStreamConnection;
+            use PhpAmqpLib\Message\AMQPMessage;
+            use PhpAmqpLib\Wire\AMQPTable;
+            
             $message = json_encode($data);
             
             $connection = new AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
