@@ -192,6 +192,8 @@ abstract class HttpServer extends Server
      */
     public function onRequest($request, $response)
     {
+        $this->startTidewaysXhprof();
+        
         $this->requestId++;
         $error              = '';
         $httpCode           = 500;
@@ -363,6 +365,42 @@ abstract class HttpServer extends Server
             $response->status($httpCode);
             $response->end($error);
         }
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        $data = [];
+        
+        // Store the tideways data.
+        $data['profile'] = tideways_xhprof_disable();
+        
+        // See xhgui/external/header.php for examples of what xhgui wants in $data.
+        $time = array_key_exists('REQUEST_TIME', $_SERVER) ? $_SERVER['REQUEST_TIME'] : time();
+        $request_time_float = explode('.', $_SERVER['REQUEST_TIME_FLOAT']);
+        if (!isset($request_time_float[1])) {
+            $request_time_float[1] = 0;
+        }
+        $request_ts = array('sec' => $time, 'usec' => 0);
+        $request_ts_micro = array('sec' => $request_time_float[0], 'usec' => $request_time_float[1]);
+        
+        // Include helpful information for the main screens.
+        $data['meta'] = array(
+            'url' => $PGLog->accessRecord['uri'],
+            'SERVER' => $_SERVER,
+            'get' => $_GET,
+            'env' => $_ENV,
+            'request_ts' => $request_ts,
+            'request_ts_micro' => $request_ts_micro,
+            'request_date' => date('Y-m-d', $time),
+            //'method' => $instance->getContext()->getInput()->getRequestMethod(),
+        );
+        $data['meta']['SERVER']['REQUEST_METHOD'] =  $instance->getContext()->getInput()->getRequestMethod();
+        
+        if (!file_exists('/tmp/xhprof')) {
+            mkdir('/tmp/xhprof', 0777, TRUE);
+        }
+        
+        //file_put_contents('/tmp/xhprof/advt_' . date('Y-m-d_H-i-s') . '.xhprof',json_encode($data));
+        $this->collectedTidewaysXhprofData($data);
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
     /**
@@ -485,5 +523,32 @@ abstract class HttpServer extends Server
         }
 
         return Macro::SEND_FILE_200;
+    }
+    
+    public function startTidewaysXhprof()
+    {
+        if (function_exists('tideways_xhprof_enable')){
+            tideways_xhprof_enable(TIDEWAYS_XHPROF_FLAGS_MEMORY | TIDEWAYS_XHPROF_FLAGS_CPU);
+        }
+    }
+    
+    public function collectedTidewaysXhprofData( $data )
+    {
+        if (function_exists('tideways_xhprof_enable')){
+            
+            $message = json_encode($data);
+            
+            $connection = new \AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
+            $channel = $connection->channel();
+            
+            $channel->queue_declare('xhprof', false, true, false, false);
+            
+            $msg = new \AMQPMessage($message, array('delivery_mode' => \AMQPMessage::DELIVERY_MODE_PERSISTENT) );
+            $channel->basic_publish($msg, '', 'xhprof');
+            $channel->close();
+            $connection->close();
+           
+        }
+        
     }
 }
