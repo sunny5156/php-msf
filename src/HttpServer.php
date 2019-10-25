@@ -542,8 +542,8 @@ abstract class HttpServer extends Server
                 
                 case 'file':
                     if (!file_exists('/tmp/xhprof')) mkdir('/tmp/xhprof', 0777, true);
-                    file_put_contents('/tmp/xhprof/advt_' . date('Y-m-d_H-i-s') . '.xhprof',json_encode($data));
-                    
+                    file_put_contents('/tmp/xhprof/advt_' . date('Y-m-d_H-i-s') . '.xhprof',$message);
+                    break;
                 case 'amqp':
                     $connection = new AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
                     $channel = $connection->channel();
@@ -555,6 +555,7 @@ abstract class HttpServer extends Server
                     $channel->basic_publish($msg, 'xhprof', 'xhprof');
                     $channel->close();
                     $connection->close();
+                    break;
             }
            
         }
