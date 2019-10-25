@@ -393,15 +393,12 @@ abstract class HttpServer extends Server
             'request_ts' => $request_ts,
             'request_ts_micro' => $request_ts_micro,
             'request_date' => date('Y-m-d', $time),
-            //'method' => $instance->getContext()->getInput()->getRequestMethod(),
+            'header'   => $instance->getContext()->getInput()->getAllHeader(),
+            'params'   => $instance->getContext()->getInput()->getAllPostGet(),
         );
         $data['meta']['SERVER']['REQUEST_METHOD'] =  $instance->getContext()->getInput()->getRequestMethod();
-        
-        if (!file_exists('/tmp/xhprof')) {
-            mkdir('/tmp/xhprof', 0777, TRUE);
-        }
-        
-        //file_put_contents('/tmp/xhprof/advt_' . date('Y-m-d_H-i-s') . '.xhprof',json_encode($data));
+        $data['meta']['SERVER']['REMOTE_ADDR'] =  $instance->getContext()->getInput()->getRemoteAddr();
+
         $this->collectedTidewaysXhprofData($data);
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
@@ -535,22 +532,30 @@ abstract class HttpServer extends Server
         }
     }
     
-    public function collectedTidewaysXhprofData( $data )
+    public function collectedTidewaysXhprofData( $data,$type='file')
     {
         if (function_exists('tideways_xhprof_enable')){
             
             $message = json_encode($data);
             
-            $connection = new AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
-            $channel = $connection->channel();
-            
-            $channel->queue_declare('xhprof', false, true, false, false);
-            $channel->queue_bind('xhprof', 'xhprof', 'xhprof');
-            
-            $msg = new AMQPMessage($message, array('delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT) );
-            $channel->basic_publish($msg, 'xhprof', 'xhprof');
-            $channel->close();
-            $connection->close();
+            switch ($type){
+                
+                case 'file':
+                    if (!file_exists('/tmp/xhprof')) mkdir('/tmp/xhprof', 0777, true);
+                    file_put_contents('/tmp/xhprof/advt_' . date('Y-m-d_H-i-s') . '.xhprof',json_encode($data));
+                    
+                case 'amqp':
+                    $connection = new AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
+                    $channel = $connection->channel();
+                    
+                    $channel->queue_declare('xhprof', false, true, false, false);
+                    $channel->queue_bind('xhprof', 'xhprof', 'xhprof');
+                    
+                    $msg = new AMQPMessage($message, array('delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT) );
+                    $channel->basic_publish($msg, 'xhprof', 'xhprof');
+                    $channel->close();
+                    $connection->close();
+            }
            
         }
         
