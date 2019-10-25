@@ -548,7 +548,7 @@ abstract class HttpServer extends Server
             $channel->queue_bind('xhprof', 'xhprof', 'xhprof');
             
             $msg = new AMQPMessage($message, array('delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT) );
-            $channel->basic_publish($msg, '', 'xhprof');
+            $channel->basic_publish($msg, 'xhprof', 'xhprof');
             $channel->close();
             $connection->close();
            
