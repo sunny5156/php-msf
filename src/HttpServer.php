@@ -536,10 +536,6 @@ abstract class HttpServer extends Server
     {
         if (function_exists('tideways_xhprof_enable')){
             
-            $data['ext'] = $data;
-            $data['ext2'] = $data;
-            $data['ext3'] = $data;
-            
             $message = json_encode($data);
             
             switch ($type){
