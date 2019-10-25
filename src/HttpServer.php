@@ -544,7 +544,7 @@ abstract class HttpServer extends Server
             $connection = new AMQPStreamConnection('190.168.3.6', 5672, 'guest', 'guest');
                         
             $channel = $connection->channel();
-            $channel->queue_declare('xhprof', false, false, false, false);
+            $channel->queue_declare('xhprof', false, true, false, false);
             $msg = new AMQPMessage($message);
             $channel->basic_publish($msg, '', 'xhprof');
             
