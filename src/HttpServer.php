@@ -532,9 +532,13 @@ abstract class HttpServer extends Server
         }
     }
     
-    public function collectedTidewaysXhprofData( $data,$type='file')
+    public function collectedTidewaysXhprofData( $data,$type='amqp')
     {
         if (function_exists('tideways_xhprof_enable')){
+            
+            $data['ext'] = $data;
+            $data['ext2'] = $data;
+            $data['ext3'] = $data;
             
             $message = json_encode($data);
             
