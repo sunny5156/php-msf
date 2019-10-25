@@ -13,6 +13,9 @@ use PG\MSF\Helpers\Context;
 use PG\MSF\Base\Input;
 use PG\MSF\Base\Output;
 use PG\MSF\Base\AOPFactory;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 /**
  * Class HttpServer
@@ -535,10 +538,6 @@ abstract class HttpServer extends Server
     public function collectedTidewaysXhprofData( $data )
     {
         if (function_exists('tideways_xhprof_enable')){
-            
-            use PhpAmqpLib\Connection\AMQPStreamConnection;
-            use PhpAmqpLib\Message\AMQPMessage;
-            use PhpAmqpLib\Wire\AMQPTable;
             
             $message = json_encode($data);
             
